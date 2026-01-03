@@ -7,6 +7,7 @@ import Teams from './components/Teams';
 import Leaderboard from './components/Leaderboard';
 import Workouts from './components/Workouts';
 import Profile from './components/Profile';
+import logo from './assets/octofitapp-small.svg';
 
 function App() {
   return (
@@ -15,7 +16,8 @@ function App() {
         <nav className="navbar navbar-expand-lg navbar-dark bg-primary">
           <div className="container-fluid">
             <Link className="navbar-brand" to="/">
-              <i className="bi bi-lightning-charge-fill"></i> OctoFit Tracker
+              <img src={logo} alt="OctoFit Logo" />
+              OctoFit Tracker
             </Link>
             <button
               className="navbar-toggler"
