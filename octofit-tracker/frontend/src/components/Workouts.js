@@ -16,6 +16,7 @@ function Workouts() {
   const fetchWorkouts = async () => {
     try {
       setLoading(true);
+      // API endpoint: https://${REACT_APP_CODESPACE_NAME}-8000.app.github.dev/api/workouts/
       const endpoint = `${API_BASE_URL}/api/workouts/`;
       console.log('Fetching workouts from:', endpoint);
       
