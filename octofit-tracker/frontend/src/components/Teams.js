@@ -18,6 +18,7 @@ function Teams() {
   const fetchTeams = async () => {
     try {
       setLoading(true);
+      // API endpoint: https://${REACT_APP_CODESPACE_NAME}-8000.app.github.dev/api/teams/
       const endpoint = `${API_BASE_URL}/api/teams/`;
       console.log('Fetching teams from:', endpoint);
       

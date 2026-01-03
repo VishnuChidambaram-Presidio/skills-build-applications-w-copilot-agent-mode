@@ -17,6 +17,7 @@ function Activities() {
   const fetchActivities = async () => {
     try {
       setLoading(true);
+      // API endpoint: https://${REACT_APP_CODESPACE_NAME}-8000.app.github.dev/api/activities/
       const endpoint = `${API_BASE_URL}/api/activities/`;
       console.log('Fetching activities from:', endpoint);
       

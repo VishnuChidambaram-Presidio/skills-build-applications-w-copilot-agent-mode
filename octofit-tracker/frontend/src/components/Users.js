@@ -17,6 +17,7 @@ function Users() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
+      // API endpoint: https://${REACT_APP_CODESPACE_NAME}-8000.app.github.dev/api/users/
       const endpoint = `${API_BASE_URL}/api/users/`;
       console.log('Fetching users from:', endpoint);
       

@@ -16,6 +16,7 @@ function Leaderboard() {
   const fetchLeaderboard = async () => {
     try {
       setLoading(true);
+      // API endpoint: https://${REACT_APP_CODESPACE_NAME}-8000.app.github.dev/api/leaderboard/
       const endpoint = `${API_BASE_URL}/api/leaderboard/`;
       console.log('Fetching leaderboard from:', endpoint);
       
