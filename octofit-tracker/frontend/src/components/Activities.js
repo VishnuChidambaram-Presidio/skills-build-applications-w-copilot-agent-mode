@@ -1,18 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 function Activities() {
   const [showModal, setShowModal] = useState(false);
-  const [activities, setActivities] = useState([
-    { id: 1, type: 'Running', distance: '5.2 km', duration: '32 min', calories: 420, date: '2025-12-29', notes: 'Morning run' },
-    { id: 2, type: 'Cycling', distance: '15.8 km', duration: '45 min', calories: 380, date: '2025-12-28', notes: 'Evening ride' },
-    { id: 3, type: 'Swimming', distance: '1.2 km', duration: '40 min', calories: 350, date: '2025-12-27', notes: 'Pool session' },
-    { id: 4, type: 'Walking', distance: '3.5 km', duration: '50 min', calories: 200, date: '2025-12-26', notes: 'Casual walk' },
-    { id: 5, type: 'Yoga', distance: '0 km', duration: '60 min', calories: 150, date: '2025-12-25', notes: 'Flexibility training' },
-    { id: 6, type: 'Running', distance: '8.3 km', duration: '48 min', calories: 580, date: '2025-12-24', notes: 'Long run' },
-  ]);
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const API_BASE_URL = process.env.REACT_APP_CODESPACE_NAME 
+    ? `https://${process.env.REACT_APP_CODESPACE_NAME}-8000.app.github.dev`
+    : 'http://localhost:8000';
+
+  useEffect(() => {
+    fetchActivities();
+  }, []);
+
+  const fetchActivities = async () => {
+    try {
+      setLoading(true);
+      const endpoint = `${API_BASE_URL}/api/activities/`;
+      console.log('Fetching activities from:', endpoint);
+      
+      const response = await fetch(endpoint);
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Fetched activities data:', data);
+      
+      // Handle both paginated (.results) and plain array responses
+      const activitiesData = data.results || data;
+      console.log('Processed activities data:', activitiesData);
+      setActivities(Array.isArray(activitiesData) ? activitiesData : []);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching activities:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleShowModal = () => setShowModal(true);
   const handleCloseModal = () => setShowModal(false);
+
+  if (loading) {
+    return (
+      <div className="fade-in text-center">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+        <p className="mt-3">Loading activities...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="fade-in">
+        <div className="alert alert-danger" role="alert">
+          <h4 className="alert-heading">Error Loading Activities</h4>
+          <p>{error}</p>
+          <button className="btn btn-primary" onClick={fetchActivities}>
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fade-in">
@@ -58,48 +115,57 @@ function Activities() {
           <h5 className="mb-0">Activity Log</h5>
         </div>
         <div className="card-body">
-          <div className="table-responsive">
-            <table className="table table-hover table-striped align-middle">
-              <thead className="table-light">
-                <tr>
-                  <th scope="col">#</th>
-                  <th scope="col">Activity Type</th>
-                  <th scope="col">Distance</th>
-                  <th scope="col">Duration</th>
-                  <th scope="col">Calories</th>
-                  <th scope="col">Date</th>
-                  <th scope="col">Notes</th>
-                  <th scope="col">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {activities.map((activity) => (
-                  <tr key={activity.id}>
-                    <th scope="row">{activity.id}</th>
-                    <td>
-                      <span className="badge bg-info">{activity.type}</span>
-                    </td>
-                    <td>{activity.distance}</td>
-                    <td>{activity.duration}</td>
-                    <td>{activity.calories}</td>
-                    <td>{activity.date}</td>
-                    <td>{activity.notes}</td>
-                    <td>
-                      <button className="btn btn-sm btn-outline-primary me-1">
-                        <i className="bi bi-eye"></i>
-                      </button>
-                      <button className="btn btn-sm btn-outline-warning me-1">
-                        <i className="bi bi-pencil"></i>
-                      </button>
-                      <button className="btn btn-sm btn-outline-danger">
-                        <i className="bi bi-trash"></i>
-                      </button>
-                    </td>
+          {activities.length === 0 ? (
+            <div className="text-center py-5">
+              <p className="text-muted">No activities found. Start logging your activities!</p>
+              <button className="btn btn-primary" onClick={handleShowModal}>
+                Log First Activity
+              </button>
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-hover table-striped align-middle">
+                <thead className="table-light">
+                  <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Activity Type</th>
+                    <th scope="col">Distance</th>
+                    <th scope="col">Duration</th>
+                    <th scope="col">Calories</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Notes</th>
+                    <th scope="col">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {activities.map((activity) => (
+                    <tr key={activity.id}>
+                      <th scope="row">{activity.id}</th>
+                      <td>
+                        <span className="badge bg-info">{activity.activity_type || activity.type}</span>
+                      </td>
+                      <td>{activity.distance} km</td>
+                      <td>{activity.duration} min</td>
+                      <td>{activity.calories}</td>
+                      <td>{new Date(activity.date || activity.activity_date).toLocaleDateString()}</td>
+                      <td>{activity.notes || '-'}</td>
+                      <td>
+                        <button className="btn btn-sm btn-outline-primary me-1">
+                          <i className="bi bi-eye"></i>
+                        </button>
+                        <button className="btn btn-sm btn-outline-warning me-1">
+                          <i className="bi bi-pencil"></i>
+                        </button>
+                        <button className="btn btn-sm btn-outline-danger">
+                          <i className="bi bi-trash"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 

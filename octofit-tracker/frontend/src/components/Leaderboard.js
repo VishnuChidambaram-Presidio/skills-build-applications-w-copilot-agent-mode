@@ -1,23 +1,46 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 function Leaderboard() {
-  const leaderboardData = [
-    { rank: 1, name: 'Sarah Johnson', team: 'Morning Runners', distance: '245 km', activities: 42, calories: 15240 },
-    { rank: 2, name: 'Mike Chen', team: 'Cycling Warriors', distance: '238 km', activities: 38, calories: 14850 },
-    { rank: 3, name: 'Emma Davis', team: 'Morning Runners', distance: '220 km', activities: 40, calories: 13900 },
-    { rank: 4, name: 'John Smith', team: 'Swim Squad', distance: '195 km', activities: 35, calories: 12500 },
-    { rank: 5, name: 'Lisa Anderson', team: 'Yoga Masters', distance: '180 km', activities: 50, calories: 11200 },
-    { rank: 6, name: 'David Wilson', team: 'Cycling Warriors', distance: '175 km', activities: 32, calories: 10800 },
-    { rank: 7, name: 'Anna Taylor', team: 'Morning Runners', distance: '168 km', activities: 38, calories: 10500 },
-    { rank: 8, name: 'Tom Brown', team: 'Swim Squad', distance: '155 km', activities: 30, calories: 9800 },
-  ];
+  const [leaderboardData, setLeaderboardData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const teamLeaderboard = [
-    { rank: 1, name: 'Morning Runners', members: 15, totalDistance: '1,234 km', avgDistance: '82.3 km' },
-    { rank: 2, name: 'Cycling Warriors', members: 12, totalDistance: '1,156 km', avgDistance: '96.3 km' },
-    { rank: 3, name: 'Swim Squad', members: 8, totalDistance: '645 km', avgDistance: '80.6 km' },
-    { rank: 4, name: 'Yoga Masters', members: 20, totalDistance: '520 km', avgDistance: '26.0 km' },
-  ];
+  const API_BASE_URL = process.env.REACT_APP_CODESPACE_NAME 
+    ? `https://${process.env.REACT_APP_CODESPACE_NAME}-8000.app.github.dev`
+    : 'http://localhost:8000';
+
+  useEffect(() => {
+    fetchLeaderboard();
+  }, []);
+
+  const fetchLeaderboard = async () => {
+    try {
+      setLoading(true);
+      const endpoint = `${API_BASE_URL}/api/leaderboard/`;
+      console.log('Fetching leaderboard from:', endpoint);
+      
+      const response = await fetch(endpoint);
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Fetched leaderboard data:', data);
+      
+      // Handle both paginated (.results) and plain array responses
+      const leaderboardArr = data.results || data;
+      console.log('Processed leaderboard data:', leaderboardArr);
+      setLeaderboardData(Array.isArray(leaderboardArr) ? leaderboardArr : []);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching leaderboard:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getMedalIcon = (rank) => {
     switch (rank) {
@@ -32,37 +55,64 @@ function Leaderboard() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="fade-in text-center">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+        <p className="mt-3">Loading leaderboard...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="fade-in">
+        <div className="alert alert-danger" role="alert">
+          <h4 className="alert-heading">Error Loading Leaderboard</h4>
+          <p>{error}</p>
+          <button className="btn btn-primary" onClick={fetchLeaderboard}>
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fade-in">
       <h1 className="display-4 mb-4">Leaderboard</h1>
 
       {/* Top 3 Performers */}
-      <div className="row mb-4">
-        {leaderboardData.slice(0, 3).map((user) => (
-          <div key={user.rank} className="col-md-4 mb-3">
-            <div className="card border-warning">
-              <div className="card-body text-center">
-                <h1 className="display-1">{getMedalIcon(user.rank)}</h1>
-                <h4 className="card-title">{user.name}</h4>
-                <p className="card-text text-muted">{user.team}</p>
-                <h5 className="text-primary">{user.distance}</h5>
-                <div className="d-flex justify-content-around mt-3">
-                  <div>
-                    <strong>{user.activities}</strong>
-                    <br />
-                    <small className="text-muted">Activities</small>
-                  </div>
-                  <div>
-                    <strong>{user.calories}</strong>
-                    <br />
-                    <small className="text-muted">Calories</small>
+      {leaderboardData.length >= 3 && (
+        <div className="row mb-4">
+          {leaderboardData.slice(0, 3).map((user, index) => (
+            <div key={user.id || index} className="col-md-4 mb-3">
+              <div className="card border-warning">
+                <div className="card-body text-center">
+                  <h1 className="display-1">{getMedalIcon(index + 1)}</h1>
+                  <h4 className="card-title">{user.user_name || user.name}</h4>
+                  <p className="card-text text-muted">{user.team_name || user.team || 'No Team'}</p>
+                  <h5 className="text-primary">{user.total_distance || user.distance} km</h5>
+                  <div className="d-flex justify-content-around mt-3">
+                    <div>
+                      <strong>{user.total_activities || user.activities}</strong>
+                      <br />
+                      <small className="text-muted">Activities</small>
+                    </div>
+                    <div>
+                      <strong>{user.total_calories || user.calories}</strong>
+                      <br />
+                      <small className="text-muted">Calories</small>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Individual Leaderboard */}
       <div className="card mb-4">
@@ -70,89 +120,50 @@ function Leaderboard() {
           <h5 className="mb-0">Individual Rankings</h5>
         </div>
         <div className="card-body">
-          <div className="table-responsive">
-            <table className="table table-hover table-striped align-middle">
-              <thead className="table-light">
-                <tr>
-                  <th scope="col">Rank</th>
-                  <th scope="col">Name</th>
-                  <th scope="col">Team</th>
-                  <th scope="col">Total Distance</th>
-                  <th scope="col">Activities</th>
-                  <th scope="col">Calories Burned</th>
-                  <th scope="col">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {leaderboardData.map((user) => (
-                  <tr key={user.rank}>
-                    <th scope="row">
-                      <span className="badge bg-primary fs-6">{getMedalIcon(user.rank)}</span>
-                    </th>
-                    <td>
-                      <strong>{user.name}</strong>
-                    </td>
-                    <td>
-                      <span className="badge bg-info">{user.team}</span>
-                    </td>
-                    <td>{user.distance}</td>
-                    <td>{user.activities}</td>
-                    <td>{user.calories}</td>
-                    <td>
-                      <button className="btn btn-sm btn-outline-primary">
-                        <i className="bi bi-person"></i> View Profile
-                      </button>
-                    </td>
+          {leaderboardData.length === 0 ? (
+            <div className="text-center py-5">
+              <p className="text-muted">No leaderboard data available yet.</p>
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-hover table-striped align-middle">
+                <thead className="table-light">
+                  <tr>
+                    <th scope="col">Rank</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Team</th>
+                    <th scope="col">Total Distance</th>
+                    <th scope="col">Activities</th>
+                    <th scope="col">Calories Burned</th>
+                    <th scope="col">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      {/* Team Leaderboard */}
-      <div className="card">
-        <div className="card-header bg-success text-white">
-          <h5 className="mb-0">Team Rankings</h5>
-        </div>
-        <div className="card-body">
-          <div className="table-responsive">
-            <table className="table table-hover table-striped align-middle">
-              <thead className="table-light">
-                <tr>
-                  <th scope="col">Rank</th>
-                  <th scope="col">Team Name</th>
-                  <th scope="col">Members</th>
-                  <th scope="col">Total Distance</th>
-                  <th scope="col">Avg Distance/Member</th>
-                  <th scope="col">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {teamLeaderboard.map((team) => (
-                  <tr key={team.rank}>
-                    <th scope="row">
-                      <span className="badge bg-success fs-6">{getMedalIcon(team.rank)}</span>
-                    </th>
-                    <td>
-                      <strong>{team.name}</strong>
-                    </td>
-                    <td>
-                      <span className="badge bg-secondary">{team.members}</span>
-                    </td>
-                    <td>{team.totalDistance}</td>
-                    <td>{team.avgDistance}</td>
-                    <td>
-                      <button className="btn btn-sm btn-outline-success">
-                        <i className="bi bi-people"></i> View Team
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {leaderboardData.map((user, index) => (
+                    <tr key={user.id || index}>
+                      <th scope="row">
+                        <span className="badge bg-primary fs-6">{getMedalIcon(index + 1)}</span>
+                      </th>
+                      <td>
+                        <strong>{user.user_name || user.name}</strong>
+                      </td>
+                      <td>
+                        <span className="badge bg-info">{user.team_name || user.team || 'No Team'}</span>
+                      </td>
+                      <td>{user.total_distance || user.distance} km</td>
+                      <td>{user.total_activities || user.activities}</td>
+                      <td>{user.total_calories || user.calories}</td>
+                      <td>
+                        <button className="btn btn-sm btn-outline-primary">
+                          <i className="bi bi-person"></i> View Profile
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>

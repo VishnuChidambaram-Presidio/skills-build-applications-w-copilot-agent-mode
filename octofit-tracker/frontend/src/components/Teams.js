@@ -1,18 +1,73 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 function Teams() {
   const [showModal, setShowModal] = useState(false);
-  const [teams] = useState([
-    { id: 1, name: 'Morning Runners', members: 15, totalDistance: '1,234 km', captain: 'John Doe', status: 'Active' },
-    { id: 2, name: 'Cycling Warriors', members: 12, totalDistance: '2,456 km', captain: 'Jane Smith', status: 'Active' },
-    { id: 3, name: 'Swim Squad', members: 8, totalDistance: '345 km', captain: 'Bob Johnson', status: 'Active' },
-    { id: 4, name: 'Yoga Masters', members: 20, totalDistance: '0 km', captain: 'Alice Brown', status: 'Active' },
-  ]);
+  const [teams, setTeams] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [myTeams] = useState([]);
 
-  const [myTeams] = useState([
-    { id: 1, name: 'Morning Runners', role: 'Member', joined: '2025-11-15' },
-    { id: 3, name: 'Swim Squad', role: 'Captain', joined: '2025-10-20' },
-  ]);
+  const API_BASE_URL = process.env.REACT_APP_CODESPACE_NAME 
+    ? `https://${process.env.REACT_APP_CODESPACE_NAME}-8000.app.github.dev`
+    : 'http://localhost:8000';
+
+  useEffect(() => {
+    fetchTeams();
+  }, []);
+
+  const fetchTeams = async () => {
+    try {
+      setLoading(true);
+      const endpoint = `${API_BASE_URL}/api/teams/`;
+      console.log('Fetching teams from:', endpoint);
+      
+      const response = await fetch(endpoint);
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Fetched teams data:', data);
+      
+      // Handle both paginated (.results) and plain array responses
+      const teamsData = data.results || data;
+      console.log('Processed teams data:', teamsData);
+      setTeams(Array.isArray(teamsData) ? teamsData : []);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching teams:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="fade-in text-center">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+        <p className="mt-3">Loading teams...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="fade-in">
+        <div className="alert alert-danger" role="alert">
+          <h4 className="alert-heading">Error Loading Teams</h4>
+          <p>{error}</p>
+          <button className="btn btn-primary" onClick={fetchTeams}>
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fade-in">
@@ -57,47 +112,48 @@ function Teams() {
           <h5 className="mb-0">All Teams</h5>
         </div>
         <div className="card-body">
-          <div className="table-responsive">
-            <table className="table table-hover table-striped align-middle">
-              <thead className="table-light">
-                <tr>
-                  <th scope="col">#</th>
-                  <th scope="col">Team Name</th>
-                  <th scope="col">Members</th>
-                  <th scope="col">Total Distance</th>
-                  <th scope="col">Captain</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {teams.map((team) => (
-                  <tr key={team.id}>
-                    <th scope="row">{team.id}</th>
-                    <td>
-                      <strong>{team.name}</strong>
-                    </td>
-                    <td>
-                      <span className="badge bg-info">{team.members} members</span>
-                    </td>
-                    <td>{team.totalDistance}</td>
-                    <td>{team.captain}</td>
-                    <td>
-                      <span className="badge bg-success">{team.status}</span>
-                    </td>
-                    <td>
-                      <button className="btn btn-sm btn-primary me-2">
-                        <i className="bi bi-box-arrow-in-right"></i> Join
-                      </button>
-                      <button className="btn btn-sm btn-outline-secondary">
-                        <i className="bi bi-eye"></i> View
-                      </button>
-                    </td>
+          {teams.length === 0 ? (
+            <div className="text-center py-5">
+              <p className="text-muted">No teams found. Create your first team!</p>
+              <button className="btn btn-success" onClick={() => setShowModal(true)}>
+                Create Team
+              </button>
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-hover table-striped align-middle">
+                <thead className="table-light">
+                  <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Team Name</th>
+                    <th scope="col">Description</th>
+                    <th scope="col">Created Date</th>
+                    <th scope="col">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {teams.map((team) => (
+                    <tr key={team.id}>
+                      <th scope="row">{team.id}</th>
+                      <td>
+                        <strong>{team.name}</strong>
+                      </td>
+                      <td>{team.description || '-'}</td>
+                      <td>{new Date(team.created_date).toLocaleDateString()}</td>
+                      <td>
+                        <button className="btn btn-sm btn-primary me-2">
+                          <i className="bi bi-box-arrow-in-right"></i> Join
+                        </button>
+                        <button className="btn btn-sm btn-outline-secondary">
+                          <i className="bi bi-eye"></i> View
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 
